@@ -4,7 +4,8 @@
     "ssh_pass": "P@55w0rd",
     "hostname": "docker-host-test",
     "memory_mb": "2048",
-    "output_directory": "output"
+    "output_directory": "output",
+    "host_adapter_name": "vboxnet0"
   },
 
   "builders": [{
@@ -38,7 +39,7 @@
       ["modifyvm", "{{.Name}}", "--memory", "{{user `memory_mb`}}", "--vram", "16"],
       ["modifyvm", "{{.Name}}", "--pae", "off", "--clipboard", "bidirectional"],
       ["modifyvm", "{{.Name}}", "--boot1", "dvd", "--boot2", "disk", "--boot3", "none", "--boot4", "none"],
-      ["modifyvm", "{{.Name}}", "--nic2", "hostonly", "--hostonlyadapter2", "vboxnet0"]
+      ["modifyvm", "{{.Name}}", "--nic2", "hostonly", "--hostonlyadapter2", "{{user `host_adapter_name`}}"]
     ],
 
     "boot_command" : [
@@ -65,27 +66,12 @@
   }],
   "provisioners": [{
     "type": "shell",
-    "execute_command": "echo '{{user `ssh_pass`}}' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
-    "inline": [
-      "#!/bin/bash -x",
-      "sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D",
-      "echo 'deb https://apt.dockerproject.org/repo ubuntu-trusty main' | sudo tee /etc/apt/sources.list.d/docker.list",
-      "sudo apt-get update -y",
-      "sudo apt-get install -y linux-image-extra-$(uname -r)",
-      "sudo apt-get install -y docker-engine",
-      "sudo usermod -aG docker {{user `ssh_name`}}",
-      "sudo service docker start",
-      "docker run hello-world"
-    ]
+    "execute_command": "echo '{{user `ssh_pass`}}' | {{ .Vars }} sudo -E -S sh '{{ .Path }}' {{user `ssh_name`}}",
+    "script": "./scripts/install-docker.sh"
   },
   {
     "type": "shell",
     "execute_command": "echo '{{user `ssh_pass`}}' | {{ .Vars }} sudo -E -S sh '{{ .Path }}'",
-    "inline": [
-      "#!/bin/bash -x",
-      "curl -L https://github.com/docker/compose/releases/download/1.5.2/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose",
-      "chmod +x /usr/local/bin/docker-compose",
-      "docker-compose --version"
-    ]
+    "script": "./scripts/install-docker-compose.sh"
   }]
 }
